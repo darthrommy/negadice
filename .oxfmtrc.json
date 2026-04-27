@@ -1,0 +1,15 @@
+{
+  "$schema": "./node_modules/oxfmt/configuration_schema.json",
+  "ignorePatterns": ["node_modules", "src-tauri", "dist"],
+  "endOfLine": "lf",
+  "indentStyle": "space",
+  "indentSize": 2,
+  "insertFinalNewline": true,
+  "sortPackageJson": true,
+  "sortImports": {
+    "newlinesBetween": true
+  },
+  "sortTailwindcss": {
+    "stylesheet": "./src/index.css"
+  }
+}
