@@ -1,6 +1,6 @@
 {
   "$schema": "./node_modules/oxfmt/configuration_schema.json",
-  "ignorePatterns": ["node_modules", "src-tauri", "dist"],
+  "ignorePatterns": ["node_modules", "src-tauri/target", "dist"],
   "endOfLine": "lf",
   "indentStyle": "space",
   "indentSize": 2,
