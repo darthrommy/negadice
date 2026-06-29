@@ -2,9 +2,10 @@ name: Release
 
 # Cutting a release is a single manual action: open the Actions tab, pick this
 # workflow, and click "Run workflow". No inputs — the version is derived from
-# today's date as YEAR.MONTH.PATCH (CalVer), where PATCH counts releases already
-# made this month. The run bumps the version files, commits to main, tags, and
-# builds the macOS + Windows installers into a draft GitHub Release.
+# today's date as YY.MONTH.PATCH (CalVer), where PATCH counts releases already
+# made this month. The two-digit year keeps the major component <= 255, which
+# Windows MSI/WiX requires of every version part. The run bumps the version
+# files, commits to main, tags, and builds the installers into a draft Release.
 on:
   workflow_dispatch:
 
@@ -29,7 +30,7 @@ jobs:
       - name: Compute CalVer version
         id: version
         run: |
-          YEAR=$(date -u +%Y)
+          YEAR=$(date -u +%y) # two digits: MSI caps each version component at 255
           MONTH=$(date -u +%-m) # no leading zero, so it stays valid semver/Cargo
           PREFIX="v${YEAR}.${MONTH}."
           # Highest existing patch for this month, +1 (robust against deleted tags).
