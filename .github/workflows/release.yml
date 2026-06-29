@@ -1,0 +1,107 @@
+name: Release
+
+# Cutting a release is a single manual action: open the Actions tab, pick this
+# workflow, and click "Run workflow". No inputs — the version is derived from
+# today's date as YEAR.MONTH.PATCH (CalVer), where PATCH counts releases already
+# made this month. The run bumps the version files, commits to main, tags, and
+# builds the macOS + Windows installers into a draft GitHub Release.
+on:
+  workflow_dispatch:
+
+# Don't allow two releases to run at once (they'd race on the version + tag).
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # commit the bump and push the tag
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      tag: ${{ steps.version.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0 # need full tag history to compute the next patch number
+
+      - name: Compute CalVer version
+        id: version
+        run: |
+          YEAR=$(date -u +%Y)
+          MONTH=$(date -u +%-m) # no leading zero, so it stays valid semver/Cargo
+          PREFIX="v${YEAR}.${MONTH}."
+          # Highest existing patch for this month, +1 (robust against deleted tags).
+          LAST=$(git tag -l "${PREFIX}*" | sed "s|^${PREFIX}||" | sort -n | tail -1)
+          if [ -z "$LAST" ]; then PATCH=0; else PATCH=$((LAST + 1)); fi
+          VERSION="${YEAR}.${MONTH}.${PATCH}"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=v$VERSION" >> "$GITHUB_OUTPUT"
+          echo "Releasing v$VERSION"
+
+      - name: Write version into Cargo.toml, Cargo.lock, package.json
+        run: node scripts/set-version.mjs "${{ steps.version.outputs.version }}"
+
+      - name: Commit bump and push tag
+        env:
+          TAG: ${{ steps.version.outputs.tag }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "release $VERSION"
+          git tag "$TAG"
+          git push origin HEAD:${{ github.ref_name }}
+          git push origin "$TAG"
+
+  build:
+    needs: prepare
+    permissions:
+      contents: write # upload installers to the release
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: macos-latest # universal (Intel + Apple Silicon) .dmg
+            args: "--target universal-apple-darwin"
+          - platform: windows-latest
+            args: ""
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare.outputs.tag }} # build the exact tagged commit
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.platform == 'macos-latest' && 'aarch64-apple-darwin,x86_64-apple-darwin' || '' }}
+
+      - name: Rust cache
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: ./src-tauri -> target
+
+      - name: Install frontend dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build app and upload to draft release
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ needs.prepare.outputs.tag }}
+          releaseName: negadice ${{ needs.prepare.outputs.tag }}
+          releaseDraft: true # creates/updates a DRAFT — you review and publish manually
+          prerelease: false
+          args: ${{ matrix.args }}

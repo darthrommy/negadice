@@ -31,6 +31,27 @@ This is an **AI-generated app** (developed with AI assistance and human guidance
 
 ---
 
+## Download & Install
+
+Prebuilt installers for **macOS** and **Windows** are attached to each
+[GitHub Release](../../releases/latest). Download the file for your platform:
+
+- **macOS:** `.dmg` (universal — works on both Apple Silicon and Intel)
+- **Windows:** `.exe` / `.msi`
+
+### First-launch warnings (the app is not code-signed)
+
+These builds aren't signed with a paid developer certificate, so the OS will warn
+you the first time. This is expected — the app is safe to run.
+
+- **macOS:** Right-click (or Control-click) the app → **Open** → confirm **Open**
+  in the dialog. After the first time, it launches normally. If you see
+  _"app is damaged"_, run once in Terminal:
+  `xattr -dr com.apple.quarantine /Applications/negadice.app`
+- **Windows:** On the SmartScreen prompt, click **More info** → **Run anyway**.
+
+---
+
 ## Tech Stack
 
 - **Frontend:** React, TypeScript, Vite, Tailwind CSS, shadcn/ui

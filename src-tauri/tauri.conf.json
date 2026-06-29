@@ -1,6 +1,5 @@
 {
   "productName": "negadice",
-  "version": "0.1.0",
   "identifier": "com.negadice.tianus",
   "build": {
     "frontendDist": "../dist",
@@ -28,7 +27,7 @@
     }
   },
   "bundle": {
-    "active": false,
+    "active": true,
     "targets": "all",
     "icon": [
       "icons/32x32.png",
