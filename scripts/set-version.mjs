@@ -18,7 +18,7 @@ const edits = [
   // Cargo.lock: the version line directly under the negadice package entry.
   {
     file: "src-tauri/Cargo.lock",
-    re: /(name = "negadice"\nversion = ")[^"]*(")/,
+    re: /(name = "negadice"\r?\nversion = ")[^"]*(")/, // \r? tolerates CRLF on Windows runners
     to: `$1${version}$2`,
   },
   // package.json: the first "version" field (top-level package metadata).
